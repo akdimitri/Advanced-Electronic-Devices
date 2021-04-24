@@ -1,0 +1,157 @@
+(set! process-up-direction "+z")
+(sdegeo:set-auto-region-naming OFF)
+
+ 
+
+ 
+
+ 
+
+(sdegeo:set-default-boolean "ABA")
+(sdegeo:create-cylinder (position 0 0 0)  (position 0.2 0 0)  0.008 "Silicon" "Channel")
+(sdegeo:create-cylinder (position -0.01 0 0)  (position 0 0 0)  0.008 "Silicon" "Source")
+(sdegeo:create-cylinder (position 0.2 0 0)  (position 0.21 0 0)  0.008 "Silicon" "Drain")
+
+ 
+
+ 
+
+ 
+
+(sdegeo:set-default-boolean "BAB")
+(sdegeo:create-cylinder (position -0.001 0 0)  (position 0.201 0 0)  0.01 "HfO2" "Oxide")
+
+ 
+
+ 
+
+ 
+
+(sdegeo:define-contact-set "gate" 4  (color:rgb 1 0 0 ) "##")
+(sdegeo:define-contact-set "source" 4  (color:rgb 0 1 0 ) "||")
+(sdegeo:define-contact-set "drain" 4  (color:rgb 0 0 1 ) "==")
+
+ 
+
+ 
+
+ 
+
+(sdegeo:set-current-contact-set "gate")
+(sdegeo:define-3d-contact (list (car (find-face-id (position 0.1 0.0 -0.01)))) "gate")
+
+ 
+
+ 
+
+ 
+
+(sdegeo:set-current-contact-set "source")
+(sdegeo:define-3d-contact (list (car (find-face-id (position -0.01 0 0)))) "source")
+
+ 
+
+ 
+
+ 
+
+(sdegeo:set-current-contact-set "drain")
+(sdegeo:define-3d-contact (list (car (find-face-id (position 0.21 0 0)))) "drain")
+
+ 
+
+ 
+
+ 
+
+(sdedr:define-constant-profile "Const.Channel" "BoronActiveConcentration" 1e16)
+(sdedr:define-constant-profile-region "PlaceCD.Channel" "Const.Channel" "Channel")
+
+ 
+
+ 
+
+ 
+
+(sdedr:define-constant-profile "Const.Source" "ArsenicActiveConcentration" 1e+19)
+(sdedr:define-constant-profile-region "PlaceCD.Source" "Const.Source" "Source")
+
+ 
+
+ 
+
+ 
+
+(sdedr:define-constant-profile "Const.Drain" "ArsenicActiveConcentration" 1e+19)
+(sdedr:define-constant-profile-region "PlaceCD.Drain" "Const.Drain" "Drain")
+
+ 
+
+ 
+
+ 
+
+#(sdedr:define-refeval-window "BaseLine.Channel_left" "Rectangle"  (position -0.012 -0.008 -0.008)  (position -0.012 0.008 0.008) )
+#(sdedr:define-analytical-profile-placement "PlaceAP.Channel_left" "Gauss.Channel_left" "BaseLine.Channel_left" "Both" "NoReplace" "Eval")
+#(sdedr:define-gaussian-profile "Gauss.Channel_left" "ArsenicActiveConcentration" "PeakPos" 0  "PeakVal" 1e+19 "ValueAtDepth" 1e+17 "Depth" 0.010 "Gauss"  "Factor" 0.8)
+
+ 
+
+ 
+
+ 
+
+#(sdedr:define-refeval-window "BaseLine.Channel_right" "Rectangle"  (position 0.212 -0.008 -0.008)  (position 0.212 0.008 0.008) )
+#(sdedr:define-analytical-profile-placement "PlaceAP.Channel_right" "Gauss.Channel_right" "BaseLine.Channel_right" "Both" "NoReplace" "Eval")
+#(sdedr:define-gaussian-profile "Gauss.Channel_right" "ArsenicActiveConcentration" "PeakPos" 0  "PeakVal" 1e+19 "ValueAtDepth" 1e+17 "Depth" 0.01 "Gauss"  "Factor" 0.8)
+
+ 
+>(sdedr:define-refinement-size "RefinementDefinition_1" 0.002 0.002 0.002 0.002 0.002 0.002 )
+>(sdedr:define-refinement-placement "RefinementPlacement_1" "RefinementDefinition_1" (list "region" "Source" ) )
+#t
+>(sdedr:define-refinement-function "RefinementDefinition_1" "MaxLenInt" "Source" "Channel" 0.001 1.5 "UseRegionNames")
+#t
+>(sdedr:define-refinement-function "RefinementDefinition_1" "MaxLenInt" "Source" "source" 0.001 1.5 "UseRegionNames")
+#t
+>
+>(sdedr:define-refinement-size "RefinementDefinition_2" 0.005 0.002 0.002 0.005 0.002 0.002 )
+#t
+>(sdedr:define-refinement-placement "RefinementPlacement_2" "RefinementDefinition_2" (list "region" "Channel" ) )
+#t
+>(sdedr:define-refinement-function "RefinementDefinition_2" "MaxLenInt" "Channel" "Source" 0.001 1.5 "UseRegionNames")
+#t
+>(sdedr:define-refinement-function "RefinementDefinition_2" "MaxLenInt" "Channel" "Drain" 0.001 1.5 "UseRegionNames")
+#t
+>(sdedr:define-refinement-function "RefinementDefinition_2" "MaxLenInt" "Channel" "Oxide" 0.001 1.5 "UseRegionNames")
+#t
+>(sdedr:define-refinement-size "RefinementDefinition_3" 0.002 0.002 0.002 0.002 0.002 0.002 )
+#t
+>(sdedr:define-refinement-placement "RefinementPlacement_3" "RefinementDefinition_3" (list "region" "Drain" ) )
+#t
+>(sdedr:define-refinement-function "RefinementDefinition_3" "MaxLenInt" "Drain" "Channel" 0.001 1.5 "UseRegionNames")
+#t
+>(sdedr:define-refinement-function "RefinementDefinition_3" "MaxLenInt" "Drain" "drain" 0.001 1.5 "UseRegionNames")
+#t
+
+
+# Build Mesh
+#-----------
+
+ 
+
+    (sde:set-meshing-command "snmesh -a -c boxmethod")
+    (sdedr:append-cmd-file "")
+    (sde:build-mesh "snmesh" "-a -c boxmethod" "n@node@")
+
+ 
+
+# Open Visual
+#------------
+
+ 
+
+    #(system:command "svisual n@node@_msh.tdr &")
+        
+# Save
+#-----
+    (sde:save-model "n@node@_msh.tdr")

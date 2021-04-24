@@ -1,0 +1,203 @@
+* File Section
+*------------------
+
+File {
+CMIPath = ". Libcmi"
+
+Grid= "n@node|sde@_msh.tdr"
+
+Output= "@log@"
+Plot= "n@node@_des.tdr"
+Current="n@node@_des.plt"
+Parameter= "@parameter@"
+}
+
+*For Schottky S & D contact cfr Ali video
+Electrode {
+{ Name="source" Material= "Metal" Voltage= 0 }
+{ Name="drain"  Material= "Metal" Voltage= 0 }
+{ Name="gate" WorkFunction= 4.55  Voltage= 0 }
+}
+
+Thermode {
+{ Name="source" Temperature=300 SurfaceResistance=1e-9 }
+{ Name="drain" Temperature=300 SurfaceResistance=1e-9 }
+}
+
+Physics {
+Temperature= 300
+Hydrodynamic(eTemperature)
+}
+
+Physics(Material= "Silicon") {
+eThermionic 
+hThermionic
+Mobility (
+	PhuMob 
+	Enormal 
+	eHighFieldsat(CarrierTempDrive) 
+	hHighFieldsat(GradQuasiFermi) )
+
+*eAvalanche(CarrierTempDrive) hAvalanche(GradQuasiFermi)
+EffectiveIntrinsicDensity(BandGapNarrowing (OldSlotboom))
+Recombination( SRH(DopingDependence))
+ThermalConductivity( Constant Conductivity )
+}
+
+*For PeltierHeat activation in Ohmic contact
+*Physics(Electrode="source"){ MSPeltierHeat}
+*Physics(Electrode="drain"){ MSPeltierHeat}
+
+*For Schottky contact
+Physics(MaterialInterface= "Metal/Silicon"){
+Schottky
+MSPeltierHeat
+Recombination(eBarrierTunneling hBarrierTunneling)
+BarrierLowering(Full)
+}
+
+Plot {
+Doping DonorConcentration AcceptorConcentration
+BandGap BandGapNarrowing ElectronAffinity
+ConductionBandEnergy ValenceBandEnergy
+eQuasiFermiEnergy hQuasiFermiEnergy
+eDensity hDensity
+EffectiveIntrinsicDensity IntrinsicDensity
+ElectricField/Vector eEparallel hEparallel
+eQuasiFermi hQuasiFermi
+egradQuasiFermi hgradQuasiFermi
+Potential Doping SpaceCharge
+SRH
+eCurrent hCurrent
+eMobility hMobility eVelocity hVelocity
+Temperature
+eTemperature hTemperature
+ThermalConductivity
+Nonlocal
+BarrierTunneling
+}
+
+*For Schottky
+Math(MaterialInterface= "Metal/Silicon"){
+NonLocal(Length= 1e-7)
+Digits(NonLocal)= 3
+EnergyResolution(NonLocal)= 0.001
+}
+
+Math {
+Number_of_Threads= 20
+Iterations= 20000
+Extrapolate
+*RelErrControl
+RhsAndUpdateConvergence
+AcceptNewtonParameter ( -RhsAndUpdateConvergence RhsMin = 1.5e-1 UpdateScale = 1e-2)
+EquilibriumSolution(Iterations=1000 Digits=7 LineSearchDamping=0.001)
+}
+
+
+Solve {
+		Coupled{Poisson }
+		Coupled{Poisson Electron Hole  }
+		Coupled(Iterations= 150) {Poisson Electron Hole 
+		eTemperature  
+		Temperature 
+		}
+					
+		Quasistationary(
+			AcceptNewtonParameter (ReferenceStep = 0.1)
+			DoZero 								
+			MaxStep= 0.05 
+			Decrement = 2
+			Increment= 1e10						
+			MinStep= 1e-9 					
+							
+			Goal { Name="drain" Voltage= 0.01 } 			
+		)
+		{ Coupled(Iterations= 50) { Poisson Electron Hole 
+		eTemperature 
+		Temperature
+		} }
+		
+		Quasistationary(
+			AcceptNewtonParameter (ReferenceStep = 0.1)
+											
+			MaxStep= 0.05 
+			Decrement = 2
+			Increment= 1e10						
+			MinStep= 1e-9 					
+							
+			Goal { Name="gate" Voltage= 0 }
+		)
+		{ Coupled(Iterations= 50) { Poisson Electron Hole 
+		eTemperature 
+		Temperature
+		} }
+
+		NewCurrentFile="IdVg_Lin_"
+		Quasistationary(
+			AcceptNewtonParameter (ReferenceStep = 0.1)
+			DoZero								
+			MaxStep= 0.05 
+			Decrement = 2
+			Increment= 1e10						
+			MinStep= 1e-9 					
+							
+			Goal { Name="gate" Voltage= 0.5 }
+		)
+		{ Coupled(Iterations= 50) { Poisson Electron Hole 
+		eTemperature 
+		Temperature
+		} }
+		
+		Quasistationary(
+			AcceptNewtonParameter (ReferenceStep = 0.1)
+			DoZero								
+			MaxStep= 0.05 
+			Decrement = 2
+			Increment= 1e10						
+			MinStep= 1e-9 					
+							
+			Goal { Name="gate" Voltage= 1 }
+		)
+		{ Coupled(Iterations= 50) { Poisson Electron Hole 
+		eTemperature 
+		Temperature
+		} }
+
+		Quasistationary(
+			AcceptNewtonParameter (ReferenceStep = 0.1)
+			DoZero								
+			MaxStep= 0.05 
+			Decrement = 2
+			Increment= 1e10						
+			MinStep= 1e-9 					
+							
+			Goal { Name="gate" Voltage= 1.5 }
+		)
+		{ Coupled(Iterations= 50) { Poisson Electron Hole 
+		eTemperature 
+		Temperature
+		} }
+
+		Quasistationary(
+			AcceptNewtonParameter (ReferenceStep = 0.1)
+			DoZero								
+			MaxStep= 0.05 
+			Decrement = 2
+			Increment= 1e10						
+			MinStep= 1e-9 					
+							
+			Goal { Name="gate" Voltage= 2 }
+		)
+		{ Coupled(Iterations= 50) { Poisson Electron Hole 
+		eTemperature 
+		Temperature
+		} }
+		
+}
+
+
+
+
+
+
