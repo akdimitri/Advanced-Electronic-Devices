@@ -1,5 +1,5 @@
 # Advanced-Electronic-Devices
-This Repository includes the group coursework files and reports of the subject Advanced Electronic Devices.
+This Repository includes the group coursework files and reports of the subject Advanced Electronic Devices. The software used for these projects was Synopsis Sentaurus TCAD. 
 
 Authors:
 
