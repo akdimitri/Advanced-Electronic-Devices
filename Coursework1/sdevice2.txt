@@ -1,0 +1,236 @@
+#	   	           Advanced Electronic Devices
+#		      ----------------------------------------
+#			Electrical & Electronic Engineering
+#			-----------------------------------
+# 			      Imperial College London
+#			      -----------------------
+#			     MOSFET: Saturation Region
+#                            -------------------------
+# Students: 			\\ Enter your names here \\
+# Log In:			\\ Enter your user names here \\
+# CID:			\\ Enter your CID numbers here \\
+# Date:			\\ Enter the date of submission here \\
+#========================================================================================
+
+* File Section
+*-------------
+
+* This section tells Sentaurus which files to read and to create for the output data.
+
+	File {
+   		* Input files:
+   		Grid=   "n@node|sprocess@_MOSFET_fps.tdr"
+   		
+   		* Output files:
+   		Plot=   "n@node@_SATURATION_des.tdr"
+   		Current="n@node@_SATURATION_des.plt"
+   		Output= "@log@"
+	}
+
+
+* Electrode Section
+*------------------
+
+* The Electrode section is used to declare the electrical device contacts together with the
+* initial boundary conditions (bias) and other optional specifications. Each electrode defined 
+* here must match exactly (case sensitive) an existing contact name in the Grid file. By default, 
+* Sentaurus Device treats an electrode as an ideal Ohmic contact.
+
+	Electrode {
+		{ Name="source"    Voltage= 0.0 }
+		{ Name="drain"     Voltage= 0.0 }
+		{ Name="gate"      Voltage= 0.0 }
+		{ Name="bulk"      Voltage= 0.0 }
+	}
+
+* Physics Section
+*----------------
+
+* This section is used to declare the physical models to be used in the simulation. 
+
+	Physics(Material="Silicon"){
+	  
+	  EffectiveIntrinsicDensity(
+	  	BandGapNarrowing (OldSlotboom)				  * Activate bandgap narrowing due to the presence
+	   		 			    * of the doping, according to the Slotboom model.
+	  )					   		       
+	  
+	  Mobility(					    * Mobility model specifications take into account: 
+	  	PhuMob			 	    * The Philips unified mobility model: unifies the 
+	      					    * description of majority and minority carrier bulk 
+	      					    * mobilities. In addition to describing the temperature
+						    * dependence of the mobility, the model takes into 
+						    * account electronâ€“hole scattering, screening of ionized 
+						    * impurities by charge carriers, and clustering of impurities.
+ 
+	      	hHighFieldSaturation(GradQuasiFermi)* Hole velocity saturation in high electric field driven by a
+	      					    * field computed as the gradient of the hole quasi-Fermi level.
+	      					    
+	      	eHighFieldSaturation(CarrierTempDrive)* Electron velocity saturation in high electric field driven
+						    * by an effective field that is based on the electron temperature 
+						    * (kinetic energy).
+
+	      
+	      	Enormal				    * Mobility degradation at semiconductorâ€“insulator interfaces 
+	      					    * due to surface roughness scattering.
+	     				     
+	      	DopingDependence			    	    * Electron or hole mobility degradation due to high doping.
+	      	
+	   )
+	   
+	   Recombination(					    * Activate the corresponding carrier generationâ€“
+	   					    * recombination terms in carrier continuity equations.
+	   	
+	   	SRH(DopingDependence)       		      * Doping dependance of the carrier lifetime before recombination.
+	     	
+	     	eAvalanche(CarrierTempDrive)				    * Define model or driving forces for the electron ionization coefficients.
+	     	hAvalanche(CarrierTempDrive)  			   * Define model or driving forces for the hole ionization coefficients
+ 
+	   )
+	   
+	   Hydrodynamic(eTemperature)				    	    * Solve carrier temperature and heat flow equations in addition to 
+	   					    * Poisson and carrier continuity equations. eTemperature restricts the 
+	   					    * Hydrodynamic transport model to electrons only. Useful model for 
+	   					    * gate lengths below 200 nm.
+	   
+	   AreaFactor= 1					    * Define the width of the device. By default in 2D simulations, Sentaurus 
+	   					    * Device assumes that the width of the simulated device is 1 um, such that 
+	   					    * the simulated current has the unit of A/um.
+	}
+
+* Plot Section
+*-------------
+
+* This section is used to specify the variables to be saved in the Plot file.
+
+	Plot{
+	* Doping Profiles
+		Doping DonorConcentration AcceptorConcentration
+	* Band Structure
+		BandGap BandGapNarrowing ElectronAffinity
+		ConductionBandEnergy ValenceBandEnergy
+		eQuasiFermiEnergy hQuasiFermiEnergy		
+	* Carrier Density
+		eDensity hDensity 
+		EffectiveIntrinsicDensity IntrinsicDensity
+	* Fields, Potentials, Currents and Charge distributions
+	   	ElectricField/Vector eEparallel hEparallel
+	   	eQuasiFermi hQuasiFermi 
+	   	Potential SpaceCharge
+		eCurrent hCurrent   
+	   	eTrappedCharge hTrappedCharge
+	   	eInterfaceTrappedCharge hInterfaceTrappedCharge
+	* Carrier Mobilities and Velocities
+		eMobility hMobility eVelocity hVelocity
+	}
+
+* Math Section
+*-------------
+
+* The Math section is used to control the simulator numerics.
+
+	Math { 
+	  
+	   Extrapolate			      * Switch on solution extrapolation along a bias ramp.
+	   Iterations= 30 			      * Maximum-allowed number of Newton iterations.
+	   Traps(Damping= 10)			      * Changing the numeric damping of the trap charge to ease calculations for the trap model.
+	   ExitOnFailure			      * Stop simulation if iterations exceed allowed value.
+	   Method= ILS			      * Use the iterative linear solver with default parameter.
+	   Number_of_Threads= Maximum * Change the number of threads to > 1 to make parallelization possible.
+	}
+
+* Solve Section
+*--------------
+
+* The Solve section consists of a series of simulation commands to be performed that are activated sequentially. 
+* The specified command sequence instructs the simulator as to which task must be solved and how. 
+* The Solve section is the only section in which the order of commands and their hierarchy are important.
+
+Solve {
+	
+	* Initial guess solution
+	*-----------------------
+	Coupled(Iterations= 100){ Poisson } * Ensure convergence, up to 100 iterations are allowed.
+	Coupled {Poisson Electron Hole}				 * Solve the Poisson equation for electrons and holes.
+
+	* The Quasistationary commant ramps a device from one solution to another through the modification 
+	* of its boundary conditions.
+	* Internally, the Quasistationary command works by ramping a variable t from 0.0 to 1.0.
+	* The voltage at the contact changes according to the formula V = V_0 + t*( V_1 â€“ V_0 ) , where V_0
+	* is the initial voltage and V_1 is the final voltage, which is specified in the Goal statement.
+	* Control of the stepping is expressed in terms of the t variable. The control is not made over
+	* contact values because more than one contact can be ramped simultaneously.
+	
+	* Initial Drain Voltage sweep to 1.5 V
+	*-------------------------------------
+   	Quasistationary( 
+   		DoZero					* Force the calculation at point t = 0 (t is not time).
+        		InitialStep= 0.01 					* Size of the first step of the ramping.
+        		Increment= 1.5					* Control the rate of increase.
+        		MinStep= 1e-9 					* Minimum limit to step size.
+        		MaxStep= 0.01 					* Maximum limit to step size.
+        		Goal { Name="drain" Voltage= 1.5 } 				* Goal value of voltage applied on the contact.
+        )
+       	{ Coupled {Poisson Electron Hole} }						* Solve the Poisson equation for electrons and holes.
+
+  
+	* Gate Voltage sweep 
+	*-------------------
+	
+   	Quasistationary( 
+      		InitialStep= 0.01 					* Size of the first step of the ramping.
+      		Increment= 1.5 					* Control the rate of increase.
+      		MinStep= 1e-9 					* Minimum limit to step size.
+      		MaxStep= 0.01 					* Maximum limit to step size.
+      		Goal { Name="gate" Voltage= -0.5 }  				* Goal value of voltage applied on the contact.
+   	)
+   	{ Coupled {Poisson Electron Hole} } 						* Solve the Poisson equation for electrons and holes.
+
+	* Gate Voltage sweep: TRANSFER Characteristic
+	*--------------------------------------------
+	NewCurrentFile="IdVg_" 						* Save plot data in different file.
+   	Quasistationary( 
+      		InitialStep= 0.01 					* Size of the first step of the ramping.
+      		Increment= 1.5 					* Control the rate of increase.
+      		MinStep= 1e-9 					* Minimum limit to step size.
+      		MaxStep= 0.01 					* Maximum limit to step size.
+      		Goal { Name="gate" Voltage= 2 }  					* Goal value of voltage applied on the contact.
+   	)
+   	{ Coupled {Poisson Electron Hole} } 						* Solve the Poisson equation for electrons and holes.
+
+
+	* Reset Drain Voltage to 0 V
+	*---------------------------
+	NewCurrentFile="Reset_"    						* Save plot data in different file.
+	Quasistationary( 
+      		InitialStep= 0.01 					* Size of the first step of the ramping.
+      		Increment= 1.5 					* Control the rate of increase.
+      		MinStep= 1e-9 					* Minimum limit to step size.
+      		MaxStep= 0.01 					* Maximum limit to step size.
+      		Goal { Name="drain" Voltage= 0 }  					* Goal value of voltage applied on the contact.
+   	)
+   	{ Coupled {Poisson Electron Hole} } 						* Solve the Poisson equation for electrons and holes.
+   	
+	* Drain Voltage sweep: OUTPUT Characteristic
+	*-------------------------------------------
+   	NewCurrentFile="IdVd_"    						* Save plot data in different file.
+   	Quasistationary( 
+      		DoZero					* Force the calculation at point t = 0 (t is not time).
+      		InitialStep= 0.01 					* Size of the first step of the ramping.
+      		Increment= 1.5 					* Control the rate of increase.
+      		MinStep= 1e-9 					* Minimum limit to step size.
+      		MaxStep= 0.01 					* Maximum limit to step size.
+      		Goal { Name="drain" Voltage= 2 } 					* Goal value of voltage applied on the contact.
+   	)
+   	{ Coupled {Poisson Electron Hole} }  						* Solve the Poisson equation for electrons and holes.
+
+}
+
+
+
+
+
+
+
+
+

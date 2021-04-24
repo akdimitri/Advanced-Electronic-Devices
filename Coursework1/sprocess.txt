@@ -1,0 +1,153 @@
+#	   	            Advanced Electronic Devices
+#		      ----------------------------------------
+#			Electrical & Electronic Engineering
+#			-----------------------------------
+# 			      Imperial College London
+#			      -----------------------
+# 				       MOSFET
+#				      --------
+# Students: 			\\ Enter your names here \\
+# Log In:			\\ Enter your user names here \\
+# CID:			\\ Enter your CID numbers here \\
+# Date:			\\ Enter the date of submission here \\
+#========================================================================================
+
+#===================================== Substrate ========================================
+#========================================================================================
+
+
+# Math
+#-----
+
+math numThreads = 2 	;# Number of threads used in simulation. DO NOT CHANGE THIS LINE!!!
+
+AdvancedCalibration  ;# Advanced Calibration is a selection of models and parameters, 
+		     ;# which are recommended by Synopsys to be used for accurate process 
+		     ;# simulation. It is used as a starting point of process calibration 
+		     ;# for all silicon-based technologies. 
+
+# Initial 2D grid
+#----------------
+
+	line x loc=0 spa=0.1 tag=top
+	line x loc=2 spa=0.1 tag=bottom
+
+	line y loc=0 spa=0.1 tag=left
+	line y loc=1.5 spa=0.1 tag=right
+	
+# Initial simulation domain
+#--------------------------
+
+	region Silicon xlo= top xhi= bottom ylo= left yhi= right 	 ;# Define the geometry region
+	init concentration= 2.11e1<cm-3> field= Boron wafer.orient= 100 ;# Initialise the simulation
+	diffuse temp= 900<C> time= 0<min>							   ;# Annealing to activate doping
+	
+	implant Boron dose=1.0e11<cm-2> energy=1200<keV> tilt=0<degree> rotation=90 mult.rot=2
+	diffuse temperature= 1100<C> time= 60<s>
+
+	implant Boron dose=1.0e11<cm-2> energy=600<keV> tilt=0<degree> rotation=90 mult.rot=2
+	diffuse temperature= 1100<C> time= 60<s>
+
+	
+	implant Boron dose=1.0e11<cm-2> energy=300<keV> tilt=0<degree> rotation=90 mult.rot=2
+	diffuse temperature= 1100<C> time= 60<s>
+
+
+	implant Boron dose=1.0e11<cm-2> energy=150<keV> tilt=0<degree> rotation=90 mult.rot=2
+	diffuse temperature= 1000<C> time= 60<s>
+
+	implant Boron dose=1.0e11<cm-2> energy=75<keV> tilt=0<degree> rotation=90 mult.rot=2
+	diffuse temperature= 900<C> time= 40<s>
+
+	implant Boron dose=4.0e11<cm-2> energy=35<keV> tilt=0<degree> rotation=90 mult.rot=2
+	diffuse temperature= 800<C> time= 20<s>
+
+	implant Boron dose=4.0e11<cm-2> energy=17<keV> tilt=0<degree> rotation=90 mult.rot=2
+	diffuse temperature= 700<C> time= 4<s>
+
+	implant Boron dose=8e11<cm-2> energy=12<keV> tilt=0<degree> rotation=90 mult.rot=2
+	diffuse temperature= 700<C> time= 0<s>
+	
+	implant Boron dose=8e11<cm-2> energy=6<keV> tilt=0<degree> rotation=90 mult.rot=2
+	diffuse temperature= 700<C> time= 0<s>
+
+	
+
+	
+
+	#struct tdr= n@node@_substrate 							   ;# Save boundary file
+	#struct smesh= n@node@_substrate 							   ;# Save mesh file
+
+#===================================== Device ===========================================
+#========================================================================================
+
+# Define Al-HfO2 gate
+#------------------------
+
+
+	deposit HfO2 type=isotropic thickness=0.0025<um> 
+	deposit TiN type=isotropic thickness=0.18<um>
+	
+	mask name= gate_mask left=0.6375 right=0.8625 							;# Define gate mask in 1D
+	
+	etch TiN type=anisotropic thickness= 0.2 mask= gate_mask
+ 	etch HfO2 type= anisotropic thickness= 0.2							;# Etch to define the gate
+	
+	struct smesh= n@node@_gate							;# Save mesh file
+	
+# Remesh
+# ------
+
+	refinebox min = {-0.2 0} max = {0.2 1.5} xrefine = 0.01 yrefine = 0.01 
+	grid remesh
+
+# LDD and Halos
+#----
+
+	implant Arsenic dose= 1e13<cm-2> energy= 10<keV> tilt= 45 rotation= 90 mult.rot=2
+	diffuse temperature= 900<C> time= 5<s>
+
+	implant Boron dose=1.0e13<cm-2> energy=20<keV> tilt=30<degree> rotation=90 mult.rot=2
+	diffuse temperature= 900<C> time= 1<s>
+							;# Save mesh file
+
+	struct smesh= n@node@_LDD							;# Save mesh file
+	
+# Spacer formation
+#-----------------
+
+	deposit Nitride type= isotropic thickness= 0.18<um>
+	etch Nitride type= anisotropic thickness= 0.18<um> isotropic.overetch= 0.01
+	
+	struct smesh= n@node@_spacers							;# Save mesh file
+	
+# Remesh
+# ------
+
+	refinebox min = {0 0.25} max = {0.3 1.25} xrefine = 0.02 yrefine = 0.02 
+	refinebox min = {0 1.8} max = {0.3 1.5675} xrefine = 0.02 yrefine = 0.02
+	grid remesh
+
+
+# HDD
+#----
+
+	implant Arsenic dose= 8e14<cm-2> energy= 15<keV> tilt= 0 rotation=90 mult.rot=2 
+	diffuse temperature= 800<C> time= 0<s>
+	
+	struct smesh= n@node@_HDD							;# Save mesh file
+	
+# Contacts
+#---------
+
+	contact name= bulk   box Silicon     bottom 
+	contact name= source box Silicon     xlo= 0    xhi= 0.05   ylo= 0   yhi= 0.25
+	contact name= drain  box Silicon     xlo= 0    xhi= 0.05   ylo= 1.25 yhi= 1.5
+	contact name= gate   box TiN xlo= -0.2 xhi= -0.175  ylo= 0.6375   yhi= 0.8625
+
+
+	struct smesh=n@node@_MOSFET 				;# Save mesh file
+	exit 				;# Stop simulation
+
+
+
